@@ -425,7 +425,8 @@
     <footer class="bg-[#161B2A] border-t border-slate-800 py-4 sm:py-6 mt-auto">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p class="text-[11px] sm:text-xs text-slate-400 font-sarabun">
-                &copy; 2026 งานเทคโนโลยีการศึกษา คณะวิศวกรรมศาสตร์ สถาบันเทคโนโลยีพระจอมเกล้าเจ้าคุณทหารลาดกระบัง
+                <span class="block sm:inline">&copy; 2026 งานเทคโนโลยีการศึกษา คณะวิศวกรรมศาสตร์</span>
+                <span class="block sm:inline">สถาบันเทคโนโลยีพระจอมเกล้าเจ้าคุณทหารลาดกระบัง</span>
             </p>
         </div>
     </footer>
@@ -1681,139 +1682,7 @@
             const form = document.getElementById('textbookForm');
             form.reset();
 
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            if (book) {
-                isManualActualPriceEdit = true;
-                document.getElementById('formModalTitle').innerText = 'แก้ไขรายการตำราเรียน';
-                document.getElementById('formBookId').value = book.id;
-                
-                let formattedCalcDate = todayStr;
-                if (book.calc_date) {
-                    const dStr = String(book.calc_date).trim();
-                    if (/^\d{4}-\d{2}-\d{2}/.test(dStr)) {
-                        formattedCalcDate = dStr.substring(0, 10);
-                    }
-                }
-                document.getElementById('formCalcDate').value = formattedCalcDate;
-
-                document.getElementById('formTitle').value = book.title || '';
-                document.getElementById('formAcademicTitle').value = book.academic_title || '';
-                document.getElementById('formAuthor').value = book.author || '';
-                document.getElementById('formDepartment').value = book.department || '';
-                document.getElementById('formBookCode').value = book.book_code || '';
-                document.getElementById('formKmitlCode').value = book.kmitl_code || '';
-                document.getElementById('formIsbn').value = book.isbn || '';
-                document.getElementById('formStatus').value = book.status || 'ร่าง';
-                document.getElementById('formEdition').value = book.edition || '';
-                document.getElementById('formPages').value = book.pages || '';
-                document.getElementById('formPrintQuantity').value = book.print_quantity || '';
-                document.getElementById('formUnitCost').value = book.unit_cost || '';
-                document.getElementById('formRemarks').value = book.remarks || '';
-
-                calculatePricing();
-
-                if (book.actual_student_price !== null && book.actual_student_price !== undefined) {
-                    document.getElementById('formActualStudentPrice').value = book.actual_student_price;
-                }
-                if (book.actual_public_price !== null && book.actual_public_price !== undefined) {
-                    document.getElementById('formActualPublicPrice').value = book.actual_public_price;
-                }
-            } else {
-                isManualActualPriceEdit = false;
-                document.getElementById('formModalTitle').innerText = 'เพิ่มรายการตำราเรียนใหม่';
-                document.getElementById('formBookId').value = '';
-                document.getElementById('formCalcDate').value = todayStr;
-                document.getElementById('formStatus').value = 'ร่าง';
-            }
-            openModal('modalAdminForm');
-        }
-
-        async function handleFormSubmit(e) {
-            e.preventDefault();
-            
-            const btnSave = document.getElementById('btnSaveSubmit');
-            btnSave.disabled = true;
-            btnSave.innerText = 'กำลังบันทึก...';
-
-            try {
-                const bookId = document.getElementById('formBookId').value;
-                const calcDate = document.getElementById('formCalcDate').value;
-                const title = document.getElementById('formTitle').value.trim();
-                const academicTitle = document.getElementById('formAcademicTitle').value.trim();
-                const author = document.getElementById('formAuthor').value.trim();
-                const department = document.getElementById('formDepartment').value.trim();
-                const bookCode = document.getElementById('formBookCode').value.trim();
-                const kmitlCode = document.getElementById('formKmitlCode').value.trim();
-                const isbn = document.getElementById('formIsbn').value.trim();
-                const status = document.getElementById('formStatus').value;
-                const edition = parseInt(document.getElementById('formEdition').value) || 1;
-                const pages = parseInt(document.getElementById('formPages').value) || 0;
-                const printQuantity = parseInt(document.getElementById('formPrintQuantity').value) || 0;
-                const unitCost = parseFloat(document.getElementById('formUnitCost').value) || 0;
-                const remarks = document.getElementById('formRemarks').value.trim();
-
-                const productionCost = printQuantity * unitCost;
-                const vatAmount = productionCost * 0.07;
-                const totalCostWithVat = productionCost + vatAmount;
-
-                const unitCostWithVat = printQuantity > 0 ? (totalCostWithVat / printQuantity) : 0;
-                const wholesaleFaculty = unitCostWithVat > 0 ? Math.ceil((unitCostWithVat * 1.35) / 5) * 5 : 0;
-                const studentPrice = wholesaleFaculty > 0 ? Math.ceil((wholesaleFaculty * 1.20) / 5) * 5 : 0;
-                const externalWholesale = wholesaleFaculty * 1.50;
-                const externalCover = externalWholesale > 0 ? Math.ceil((externalWholesale * 1.40) / 5) * 5 : 0;
-
-                const actualStudentInput = document.getElementById('formActualStudentPrice').value;
-                const actualPublicInput = document.getElementById('formActualPublicPrice').value;
-
-                const actualStudentPrice = actualStudentInput !== '' ? parseFloat(actualStudentInput) : studentPrice;
-                const actualPublicPrice = actualPublicInput !== '' ? parseFloat(actualPublicInput) : externalCover;
-
-                const payload = {
-                    calc_date: calcDate,
-                    title: title,
-                    academic_title: academicTitle,
-                    author: author,
-                    department: department,
-                    book_code: bookCode,
-                    kmitl_code: kmitlCode,
-                    isbn: isbn,
-                    status: status,
-                    edition: edition,
-                    pages: pages,
-                    print_quantity: printQuantity,
-                    unit_cost: unitCost,
-                    production_cost: productionCost,
-                    vat_amount: vatAmount,
-                    total_cost_with_vat: totalCostWithVat,
-                    wholesale_faculty: wholesaleFaculty,
-                    student_price_rounded: studentPrice,
-                    external_wholesale: externalWholesale,
-                    external_cover_rounded: externalCover,
-                    actual_student_price: actualStudentPrice,
-                    actual_public_price: actualPublicPrice,
-                    remarks: remarks,
-                    updated_at: new Date().toISOString()
-                };
-
-                if (bookId) {
-                    const { error } = await supabaseClient.from('textbooks').update(payload).eq('id', bookId);
-                    if (error) throw error;
-                    showToast('อัปเดตข้อมูลสำเร็จ', 'success');
-                } else {
-                    const { error } = await supabaseClient.from('textbooks').insert([payload]);
-                    if (error) throw error;
-                    showToast('เพิ่มรายการสำเร็จ', 'success');
-                }
-
-                closeModal('modalAdminForm');
-                await loadTextbooksData();
-            } catch (err) {
-                showToast('เกิดข้อผิดพลาดในการบันทึก: ' + err.message, 'error');
-            } finally {
-                btnSave.disabled = false;
-                btnSave.innerText = 'บันทึกข้อมูล';
-            }
+            const todayStr = new Date().toISOString().split('T');
         }
     </script>
 </body>
